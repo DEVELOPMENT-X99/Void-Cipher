@@ -1,0 +1,181 @@
+\documentclass[12pt,a4paper]{article}
+
+% ==========================================
+% 1. PACKAGES & SETUP
+% ==========================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathrsfs}
+\usepackage{amsmath, amssymb, amsfonts, bm, amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{siunitx}
+
+\geometry{margin=2.5cm, headheight=15pt, top=2.5cm, bottom=2.5cm}
+
+\definecolor{PrimaryBlue}{RGB}{10, 35, 70}
+\definecolor{SecondaryBlue}{RGB}{30, 80, 140}
+\definecolor{AccentGold}{RGB}{170, 120, 40}
+\definecolor{LightGray}{RGB}{248, 249, 250}
+\definecolor{CodeBg}{RGB}{240, 243, 246}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=PrimaryBlue,
+    filecolor=PrimaryBlue,
+    urlcolor=SecondaryBlue,
+    pdfborder={0 0 0}
+}
+
+\titleformat{\section}{\Large\bfseries\color{PrimaryBlue}}{\thesection}{1em}{}[\vspace{-0.1cm}\rule{\textwidth}{1pt}\vspace{0.2cm}]
+\titleformat{\subsection}{\large\bfseries\color{SecondaryBlue}}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{SecondaryBlue}{\textbf{Critical Retrospective: Void Cipher}}}
+\fancyhead[R]{\small\textcolor{SecondaryBlue}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+\onehalfspacing
+
+\newtcolorbox{critiquebox}[1]{
+  colback=red!5, colframe=red!60!black, fonttitle=\bfseries,
+  title=#1, sharp corners, boxrule=1pt, left=4mm, right=4mm, top=2mm, bottom=2mm
+}
+\newtcolorbox{lessonbox}[1]{
+  colback=SecondaryBlue!5, colframe=SecondaryBlue, fonttitle=\bfseries,
+  title=#1, sharp corners, boxrule=1pt, left=4mm, right=4mm, top=2mm, bottom=2mm
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    {\Large\textbf{\textcolor{SecondaryBlue}{SIRTE UNIVERSITY}}}\\[0.2cm]
+    {\large Faculty of Information Technology}\\[2cm]
+    \textcolor{AccentGold}{\rule{\textwidth}{2pt}}\\[1cm]
+    {\Huge\bfseries\textcolor{PrimaryBlue}{A Critical Retrospective on Positional Cryptography}}\\[0.5cm]
+    {\Large\bfseries Theoretical Flaws, Cryptanalytic Failures, and the Redemption of Void Cipher}\\[1cm]
+    \textcolor{AccentGold}{\rule{\textwidth}{2pt}}\\[2cm]
+    \begin{minipage}{0.7\textwidth}
+        \centering
+        \large
+        \textbf{Author:}\\
+        Abdalmlk Abdalbaset Saleh\\
+        \vspace{0.6cm}
+        \textbf{Contact:}\\
+        \texttt{Abdulmalik55012@su.edu.ly}
+    \end{minipage}\\[2.5cm]
+    \vfill
+    {\large Technical Report \& Cryptanalysis}\\[0.2cm]
+    {\large \today}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section*{Abstract}
+This report presents a rigorous cryptographic retrospective on the development of the "Void Cipher" family (versions 1.0 through 3.0). Initially conceived as a positional data-hiding mechanism with claims of Information-Theoretic Security (ITS), the architecture underwent multiple iterations. This document formally evaluates those designs through the lens of modern cryptanalysis. We demonstrate that the initial spatial models failed due to the absence of Shannon entropy bounds and the "Mask Neutralization" flaw. We further analyze the final iteration (v3.0): assuming HMAC-SHA256 is a secure PRF, its core keystream generator is theoretically sound. However, the overall construction severely limits the effective randomness per keystream byte by collapsing the 256-bit PRF output into a 20-bit index, suffers from architectural side-channels, and incurs massive computational waste. We conclude by formally abandoning the positional architecture in favor of standardized, rigorously peer-reviewed primitives (v4.0).
+
+\section{Introduction and Self-Critique}
+\textit{This document is a self-critique by the original author.}
+
+The Void Cipher project was conducted between 2025 and 2026 as an independent research effort. It was initially driven by the goal of designing a cryptographic framework resistant to post-quantum threats. The core hypothesis was that by mapping data spatially into a virtual 3D grid (a "void" or "Q-Block"), one could obscure the relationship between plaintext and ciphertext, thereby avoiding the algebraic weaknesses of algorithms like AES or RSA. This document constitutes a formal retraction of those unproven claims.
+
+\section{Cryptanalysis of Iterations v1.0 and v2.0}
+\subsection{The Illusion of Information-Theoretic Security}
+I falsely claimed that the early system provided ITS. Shannon's theorem dictates that for Perfect Secrecy, the entropy of the key must equal or exceed the entropy of the message: \(H(K) \ge H(M)\). The v2.0 implementation utilized a 64-bit key. For any message exceeding 8 bytes, \(H(K) < H(M)\), mathematically forbidding ITS.
+
+\subsection{The Mask Neutralization Flaw}
+In v1.0, the ciphertext explicitly contained coordinates \((x_i, y_i, z_i)\) and a mask \(m_i\):
+\begin{equation}
+C_i = (V(x_i, y_i, z_i) \oplus m_i, \; x_i, \; y_i, \; z_i)
+\end{equation}
+Under Kerckhoffs's principle, the void function \(V\) is public. An attacker can isolate the first component and evaluate \(V\) directly from the coordinates to recover \(m_i\):
+\begin{equation}
+m_i = V(x_i, y_i, z_i) \oplus (V(x_i, y_i, z_i) \oplus m_i)
+\end{equation}
+Thus, the spatial mapping provided zero cryptographic protection.
+
+\section{The V3.0 Paradox: When Decoration Becomes a Vulnerability}
+In v3.0, the architecture shifted to a stream cipher model. The Q-Block was public, meaning the entire security rested on the HMAC output.
+
+\begin{critiquebox}{Computational Waste}
+The implementation evaluated HMAC-SHA256 (256-bit output) to extract a single byte per keystream position. It discarded 248 of 256 bits of cryptographic material, resulting in a \textbf{96.875\% computational waste}. Generating 1 MB of keystream required 1 million full HMAC evaluations, making it orders of magnitude slower than standard ciphers.
+\end{critiquebox}
+
+\subsection{The Index Entropy Collapse}
+The index was calculated as $idx = (x \oplus y \oplus z) \bmod blockSize$. For a 1MB block size ($2^{20}$), the index possesses at most 20 bits of entropy per position. By the data processing inequality applied to the chain:
+\begin{equation}
+H(\text{idx}_i) \le 20 \text{ bits}, \qquad H(S_i) \le 8 \text{ bits}.
+\end{equation}
+Consequently, 236 bits of cryptographic material were discarded at every step.
+
+\section{Side-Channel Vulnerabilities}
+The memory access \texttt{qBlock[idx]} was data-dependent. Because \texttt{idx} was derived directly from the secret key, an attacker could observe cache lines to deduce the sequence of indices. In an idealized Prime+Probe model, each access leaks at most $\log_2(512) = 9$ bits. Recovering the 20-bit index requires as few as \(\lceil 20/9 \rceil \approx 3\) traceable accesses.
+
+\section{Redemption and Future Architecture (v4.0)}
+The spatial architecture is formally abandoned. For the future, the code has been redesigned to use a standard AEAD approach with modern primitives (BLAKE3 and Poly1305).
+
+\subsection{The Future C++ Code}
+\begin{lstlisting}[language=C++, caption={Future Void Cipher v4.0 (Standardized AEAD)}]
+// The future architecture abandons the spatial metaphor entirely.
+// It utilizes a 256-bit key and a 128-bit nonce for a secure PRF (e.g., BLAKE3).
+#include <vector>
+#include <cstdint>
+
+class FutureVoidCipher {
+private:
+    uint8_t masterKey[32]; // 256-bit key
+
+public:
+    FutureVoidCipher(const std::vector<uint8_t>& key) {
+        std::copy(key.begin(), key.end(), masterKey);
+    }
+
+    std::vector<uint8_t> encrypt(const std::vector<uint8_t>& plaintext, const uint8_t nonce[12]) {
+        std::vector<uint8_t> ciphertext(plaintext.size());
+        std::vector<uint8_t> keystream(plaintext.size());
+
+        // 1. Generate Keystream via Standard PRF (e.g., BLAKE3)
+        // K' = BLAKE3(masterKey || nonce)
+        
+        // 2. XOR Plaintext with Keystream
+        for (size_t i = 0; i < plaintext.size(); ++i) {
+            ciphertext[i] = plaintext[i] ^ keystream[i];
+        }
+
+        // 3. Compute MAC (e.g., Poly1305) for Integrity
+        
+        return ciphertext;
+    }
+};
+\end{lstlisting}
+
+\section{Lessons Learned}
+\begin{lessonbox}{Cryptographic Engineering Principles}
+\begin{enumerate}
+    \item \textbf{Never conflate spatial representation with mathematical security.} Hiding data visually does not equate to algebraic confidentiality.
+    \item \textbf{Complexity is the enemy of security.} The Q-Block added massive overhead, reduced entropy, and introduced side-channels, all while providing zero cryptographic benefit.
+    \item \textbf{Standardization exists for a reason.} Algorithms like ChaCha20 and AES-GCM have survived decades of global cryptanalysis.
+\end{enumerate}
+\end{lessonbox}
+
+\section{Conclusion}
+The Void Cipher project serves as a valuable case study in cryptographic design. It demonstrated that intuitive metaphors do not translate into mathematical security. The positional architecture is formally abandoned in favor of established, rigorously analyzed standards such as AES-256-GCM or ChaCha20-Poly1305.
+
+\end{document}
